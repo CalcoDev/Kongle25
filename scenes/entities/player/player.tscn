@@ -1,0 +1,238 @@
+[gd_scene load_steps=13 format=3 uid="uid://cqbin1vsa861l"]
+
+[ext_resource type="Script" uid="uid://b1c0d7yxbxglb" path="res://scripts/entities/player/player.gd" id="1_58kc7"]
+[ext_resource type="Shader" uid="uid://dt2hkf7cuilv6" path="res://shaders/misc/sprite_outline.gdshader" id="2_nh4ur"]
+[ext_resource type="Texture2D" uid="uid://6wpdwnhirah7" path="res://assets/characters/kongle/kongle_spritesheet.png" id="3_bjvvg"]
+
+[sub_resource type="Animation" id="Animation_58kc7"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visuals/SpriteRotationAnchor/AnimatedSprite2D:animation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [&"default"]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Visuals/SpriteRotationAnchor/AnimatedSprite2D:frame")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Visuals/SpriteRotationAnchor/Eyes:visible")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+
+[sub_resource type="Animation" id="Animation_nh4ur"]
+resource_name = "idle"
+step = 0.1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visuals/SpriteRotationAnchor/AnimatedSprite2D:animation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [&"default"]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Visuals/SpriteRotationAnchor/AnimatedSprite2D:frame")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Visuals/SpriteRotationAnchor/Eyes:visible")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+
+[sub_resource type="Animation" id="Animation_bjvvg"]
+resource_name = "roll"
+length = 0.4
+step = 0.0333333
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visuals/SpriteRotationAnchor/AnimatedSprite2D:animation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [&"roll"]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Visuals/SpriteRotationAnchor/AnimatedSprite2D:frame")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Visuals/SpriteRotationAnchor/Eyes:visible")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_8akj5"]
+_data = {
+&"RESET": SubResource("Animation_58kc7"),
+&"idle": SubResource("Animation_nh4ur"),
+&"roll": SubResource("Animation_bjvvg")
+}
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mrac1"]
+shader = ExtResource("2_nh4ur")
+shader_parameter/solid_color = Color(1, 1, 1, 0)
+shader_parameter/thick = false
+shader_parameter/width = 1
+shader_parameter/outline_color = Color(1, 1, 1, 1)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_emj6c"]
+atlas = ExtResource("3_bjvvg")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mrac1"]
+atlas = ExtResource("3_bjvvg")
+region = Rect2(16, 16, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_2q4k0"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_emj6c")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mrac1")
+}],
+"loop": true,
+"name": &"roll",
+"speed": 5.0
+}]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_emj6c"]
+radius = 4.0
+
+[node name="Player" type="CharacterBody2D" unique_id=1128241425 node_paths=PackedStringArray("_visuals", "_rotation_anchor", "_line")]
+collision_layer = 2
+motion_mode = 1
+script = ExtResource("1_58kc7")
+_visuals = NodePath("Visuals")
+_rotation_anchor = NodePath("Visuals/SpriteRotationAnchor")
+_line = NodePath("YeetLine")
+slope_friction = 200.0
+roll_decelrtaion = 800.0
+jump_force = 140.0
+yeet_max_dist = 200.0
+gravity = -480.0
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=236535895]
+libraries/ = SubResource("AnimationLibrary_8akj5")
+
+[node name="Visuals" type="Node2D" parent="." unique_id=1158822374]
+position = Vector2(0, -5)
+
+[node name="SpriteRotationAnchor" type="Node2D" parent="Visuals" unique_id=1398145936]
+position = Vector2(1, 3)
+rotation = 6.2831855
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Visuals/SpriteRotationAnchor" unique_id=2138444119]
+material = SubResource("ShaderMaterial_mrac1")
+position = Vector2(-1, -3)
+sprite_frames = SubResource("SpriteFrames_2q4k0")
+autoplay = "default"
+
+[node name="Eyes" type="Node2D" parent="Visuals/SpriteRotationAnchor" unique_id=1102769066]
+position = Vector2(-1, -3)
+
+[node name="Left" type="ColorRect" parent="Visuals/SpriteRotationAnchor/Eyes" unique_id=1784587533]
+offset_left = -3.0
+offset_top = -2.0
+offset_bottom = 3.0
+
+[node name="Pupil" type="ColorRect" parent="Visuals/SpriteRotationAnchor/Eyes/Left" unique_id=436950149]
+layout_mode = 0
+offset_top = 2.0
+offset_right = 2.0
+offset_bottom = 4.0
+color = Color(0.078431375, 0.09411765, 0.18039216, 1)
+
+[node name="Right" type="ColorRect" parent="Visuals/SpriteRotationAnchor/Eyes" unique_id=1490226524]
+offset_left = 1.0
+offset_top = -2.0
+offset_right = 4.0
+offset_bottom = 3.0
+
+[node name="Pupil" type="ColorRect" parent="Visuals/SpriteRotationAnchor/Eyes/Right" unique_id=1438039240]
+layout_mode = 0
+offset_top = 2.0
+offset_right = 2.0
+offset_bottom = 4.0
+color = Color(0.078431375, 0.09411765, 0.18039216, 1)
+
+[node name="YeetLine" type="Line2D" parent="." unique_id=726412717]
+points = PackedVector2Array(0, 0, 0, 0)
+width = 3.0
+default_color = Color(0.94509804, 0.35686275, 0.29411766, 1)
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=286945097]
+visible = false
+position = Vector2(1, -2)
+shape = SubResource("CircleShape2D_emj6c")
