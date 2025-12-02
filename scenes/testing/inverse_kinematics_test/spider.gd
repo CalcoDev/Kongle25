@@ -13,12 +13,43 @@ class Segment:
         self.pos = pos
         self.length = length
 
-const coll_radius := 60.0
+@export var coll_radius := 60.0
 var base_pos := Vector2(320, 240)
+
+@export var short_leg_length := 30.0
+@export var long_leg_length := 30.0
 
 # var segments: Array[Segment] = []
 
+var outer_left_leg_actual := Vector2.ZERO
+var inner_left_leg_actual := Vector2.ZERO
+var inner_right_leg_actual := Vector2.ZERO
+var outer_right_leg_actual := Vector2.ZERO
+
+var outer_left_leg_segments: Array[Segment] = []
+var inner_left_leg_segments: Array[Segment] = []
+var inner_right_leg_segments: Array[Segment] = []
+var outer_right_leg_segments: Array[Segment] = []
+
 func _ready() -> void:
+    
+    # var p := base_pos.lerp(get_outer_left_leg(), 0.5)
+    outer_left_leg_segments.append(Segment.new(base_pos, short_leg_length))
+    outer_left_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_outer_left_leg().x, 0.2), base_pos.y - 10.0), long_leg_length))
+    outer_left_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_outer_left_leg().x, 0.6), base_pos.y - 20.0), long_leg_length))
+    
+    inner_left_leg_segments.append(Segment.new(base_pos, short_leg_length))
+    inner_left_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_inner_left_leg().x, 0.2), base_pos.y - 10.0), long_leg_length))
+    inner_left_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_inner_left_leg().x, 0.6), base_pos.y - 20.0), long_leg_length))
+    
+    inner_right_leg_segments.append(Segment.new(base_pos, short_leg_length))
+    inner_right_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_inner_right_leg().x, 0.2), base_pos.y - 10.0), long_leg_length))
+    inner_right_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_inner_right_leg().x, 0.6), base_pos.y - 20.0), long_leg_length))
+    
+    outer_right_leg_segments.append(Segment.new(base_pos, short_leg_length))
+    outer_right_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_outer_right_leg().x, 0.2), base_pos.y - 10.0), long_leg_length))
+    outer_right_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_outer_right_leg().x, 0.6), base_pos.y - 20.0), long_leg_length))
+
     # const sgm_cnt := 20
     # for i in sgm_cnt:
     #     var norm := (i as float) / (sgm_cnt as float)
@@ -34,29 +65,105 @@ func _process(_delta: float) -> void:
     base_pos = get_global_mouse_position()
 
     # target_pos = get_global_mouse_position()
-    # # forward
-    # var next := segments[segments.size() - 1]
-    # next.pos = target_pos
-    # for i in range(segments.size() - 2, 0 - 1, -1):
-    #     var curr := segments[i]
-    #     var dir := (next.pos - curr.pos).normalized() * curr.length
-    #     curr.pos = next.pos - dir
-    #     next = curr
-    # # back
-    # var prev := segments[0]
-    # prev.pos = base_pos
-    # for i in range(1, segments.size(), 1):
-    #     var curr := segments[i]
-    #     var dir := (curr.pos - prev.pos).normalized() * prev.length
-    #     curr.pos = prev.pos + dir
-    #     prev = curr
+    # forward
+    var next := outer_left_leg_segments[outer_left_leg_segments.size() - 1]
+    next.pos = outer_left_leg_actual
+    for i in range(outer_left_leg_segments.size() - 2, 0 - 1, -1):
+        var curr := outer_left_leg_segments[i]
+        var dir := (next.pos - curr.pos).normalized() * curr.length
+        curr.pos = next.pos - dir
+        next = curr
+    # back
+    var prev := outer_left_leg_segments[0]
+    prev.pos = base_pos
+    for i in range(1, outer_left_leg_segments.size(), 1):
+        var curr := outer_left_leg_segments[i]
+        var dir := (curr.pos - prev.pos).normalized() * prev.length
+        curr.pos = prev.pos + dir
+        prev = curr
+
+    # target_pos = get_global_mouse_position()
+    # forward
+    next = inner_left_leg_segments[inner_left_leg_segments.size() - 1]
+    next.pos = inner_left_leg_actual
+    for i in range(inner_left_leg_segments.size() - 2, 0 - 1, -1):
+        var curr := inner_left_leg_segments[i]
+        var dir := (next.pos - curr.pos).normalized() * curr.length
+        curr.pos = next.pos - dir
+        next = curr
+    # back
+    prev = inner_left_leg_segments[0]
+    prev.pos = base_pos
+    for i in range(1, inner_left_leg_segments.size(), 1):
+        var curr := inner_left_leg_segments[i]
+        var dir := (curr.pos - prev.pos).normalized() * prev.length
+        curr.pos = prev.pos + dir
+        prev = curr
+
+    # target_pos = get_global_mouse_position()
+    # forward
+    next = inner_right_leg_segments[inner_right_leg_segments.size() - 1]
+    next.pos = inner_right_leg_actual
+    for i in range(inner_right_leg_segments.size() - 2, 0 - 1, -1):
+        var curr := inner_right_leg_segments[i]
+        var dir := (next.pos - curr.pos).normalized() * curr.length
+        curr.pos = next.pos - dir
+        next = curr
+    # back
+    prev = inner_right_leg_segments[0]
+    prev.pos = base_pos
+    for i in range(1, inner_right_leg_segments.size(), 1):
+        var curr := inner_right_leg_segments[i]
+        var dir := (curr.pos - prev.pos).normalized() * prev.length
+        curr.pos = prev.pos + dir
+        prev = curr
+
+    # target_pos = get_global_mouse_position()
+    # forward
+    next = outer_right_leg_segments[outer_right_leg_segments.size() - 1]
+    next.pos = outer_right_leg_actual
+    for i in range(outer_right_leg_segments.size() - 2, 0 - 1, -1):
+        var curr := outer_right_leg_segments[i]
+        var dir := (next.pos - curr.pos).normalized() * curr.length
+        curr.pos = next.pos - dir
+        next = curr
+    # back
+    prev = outer_right_leg_segments[0]
+    prev.pos = base_pos
+    for i in range(1, outer_right_leg_segments.size(), 1):
+        var curr := outer_right_leg_segments[i]
+        var dir := (curr.pos - prev.pos).normalized() * prev.length
+        curr.pos = prev.pos + dir
+        prev = curr
 
     queue_redraw()
 
-var p := Vector2.ZERO
-func _physics_process(_delta: float) -> void:
-    p = get_closest_collision_point_from_target(base_pos, base_pos, coll_radius)
-    pass
+func _physics_process(delta: float) -> void:
+    var v := Vector2.ZERO
+
+    delta *= 2.0
+    const le_dist := 30.0
+    
+    v = get_closest_collision_point_from_target(base_pos, base_pos + get_outer_left_leg(), coll_radius)
+    if v != Vector2.INF:
+        outer_left_leg_actual = outer_left_leg_actual.lerp(v, delta)
+        if outer_left_leg_actual.distance_to(v) >= le_dist and randi() % 4 == 0:
+            outer_left_leg_actual = v
+    v = get_closest_collision_point_from_target(base_pos, base_pos + get_inner_left_leg(), coll_radius)
+    if v != Vector2.INF:
+        inner_left_leg_actual = inner_left_leg_actual.lerp(v, delta)
+        if inner_left_leg_actual.distance_to(v) >= le_dist and randi() % 4 == 1:
+            inner_left_leg_actual = v
+    v = get_closest_collision_point_from_target(base_pos, base_pos + get_inner_right_leg(), coll_radius)
+    if v != Vector2.INF:
+        inner_right_leg_actual = inner_right_leg_actual.lerp(v, delta)
+        if inner_right_leg_actual.distance_to(v) >= le_dist and randi() % 4 == 2:
+            inner_right_leg_actual = v
+    v = get_closest_collision_point_from_target(base_pos, base_pos + get_outer_right_leg(), coll_radius)
+    if v != Vector2.INF:
+        outer_right_leg_actual = outer_right_leg_actual.lerp(v, delta)
+        if outer_right_leg_actual.distance_to(v) >= le_dist and randi() % 4 == 3:
+            outer_right_leg_actual = v
 
 func _draw() -> void:
     draw_circle(base_pos, coll_radius, Color8(0, 255, 255, 30))
@@ -67,39 +174,57 @@ func _draw() -> void:
     draw_circle(base_pos, r, Color.RED)
 
     const r1 := 3.0
-    # draw_circle(Vector2(inner_foot_width)
-    for l in get_leg_array():
-        draw_circle(base_pos + l, r1 + o, Color.WHITE)
-        draw_circle(base_pos + l, r1, Color.CYAN)
+    draw_circle(base_pos + get_outer_left_leg(), r1 + o, Color.WHITE)
+    draw_circle(base_pos + get_outer_left_leg(), r1, Color.CYAN)
+    # for l in get_leg_array():
+    #     draw_circle(base_pos + l, r1 + o, Color.WHITE)
+    #     draw_circle(base_pos + l, r1, Color.CYAN)
     
-    draw_circle(-global_position + p, 5.0, Color.ORANGE)
+    draw_circle(-global_position + outer_left_leg_actual, 5.0, Color.ORANGE)
+    # draw_circle(-global_position + inner_left_leg_actual, 5.0, Color.ORANGE)
+    # draw_circle(-global_position + inner_right_leg_actual, 5.0, Color.ORANGE)
+    # draw_circle(-global_position + outer_right_leg_actual, 5.0, Color.ORANGE)
 
-    # for i in length(segments) - 1:
-    #     draw_line(segments[i].pos, segments[i+1].pos, Color.GREEN, 2.0)
-    # const r2 := 3.0
-    # for segm in segments:
-    #     draw_circle(segm.pos, r2 + o, Color.WHITE)
-    #     draw_circle(segm.pos, r2, Color.RED)
+    for i in outer_left_leg_segments.size() - 1:
+        draw_line(outer_left_leg_segments[i].pos, outer_left_leg_segments[i+1].pos, Color.GREEN, 3.0)
+    const r2 := 3.0
+    for segm in outer_left_leg_segments:
+        draw_circle(segm.pos, r2 + o, Color.WHITE)
+        draw_circle(segm.pos, r2, Color.REBECCA_PURPLE)
 
+    for i in inner_left_leg_segments.size() - 1:
+        draw_line(inner_left_leg_segments[i].pos, inner_left_leg_segments[i+1].pos, Color.GREEN, 3.0)
+    for segm in inner_left_leg_segments:
+        draw_circle(segm.pos, r2 + o, Color.WHITE)
+        draw_circle(segm.pos, r2, Color.REBECCA_PURPLE)
+
+    for i in inner_right_leg_segments.size() - 1:
+        draw_line(inner_right_leg_segments[i].pos, inner_right_leg_segments[i+1].pos, Color.GREEN, 3.0)
+    for segm in inner_right_leg_segments:
+        draw_circle(segm.pos, r2 + o, Color.WHITE)
+        draw_circle(segm.pos, r2, Color.REBECCA_PURPLE)
+
+    for i in outer_right_leg_segments.size() - 1:
+        draw_line(outer_right_leg_segments[i].pos, outer_right_leg_segments[i+1].pos, Color.GREEN, 3.0)
+    for segm in outer_right_leg_segments:
+        draw_circle(segm.pos, r2 + o, Color.WHITE)
+        draw_circle(segm.pos, r2, Color.REBECCA_PURPLE)
 
 
 func get_leg_array() -> Array[Vector2]:
     return [get_outer_left_leg(), get_inner_left_leg(), get_inner_right_leg(), get_outer_right_leg()]
 
 func get_outer_left_leg() -> Vector2:
-    return Vector2(outer_foot_width, foot_height)
-
-func get_inner_left_leg() -> Vector2:
-    return Vector2(inner_foot_width, foot_height)
-
-func get_inner_right_leg() -> Vector2:
-    return Vector2(-inner_foot_width, foot_height)
-
-func get_outer_right_leg() -> Vector2:
     return Vector2(-outer_foot_width, foot_height)
 
-# func get_physical_leg_swipe(target_pos: Vector2) -> Vector2:
-#     pass
+func get_inner_left_leg() -> Vector2:
+    return Vector2(-inner_foot_width, foot_height)
+
+func get_inner_right_leg() -> Vector2:
+    return Vector2(inner_foot_width, foot_height)
+
+func get_outer_right_leg() -> Vector2:
+    return Vector2(outer_foot_width, foot_height)
 
 func get_closest_collision_point_from_target(base_position: Vector2, target_position: Vector2, radius: float, collision_mask: int = 0x7FFFFFFF) -> Vector2:
     var space := get_world_2d().direct_space_state
@@ -114,14 +239,12 @@ func get_closest_collision_point_from_target(base_position: Vector2, target_posi
     var da := space.intersect_shape(params)
     PhysicsServer2D.free_rid(shape_rid)
 
-    var min_dist := 99999.9
-    var min_pos := target_position # something base case I guess
+    var min_dist := 999999999.9
+    var min_pos := Vector2.INF # something base case I guess
 
-    print(" -- NEW CHECK -- ")
     for r in da:
-        var point := _closest_point_on_shape_local(r["rid"], r["shape"], target_position)
+        var point := _closest_point_on_shape_local(r["rid"], r["shape"], target_position, true, true, base_pos)
         var dist := point.distance_squared_to(target_position)
-        print(dist)
         if dist < min_dist:
             min_dist = dist
             min_pos = point
@@ -129,7 +252,7 @@ func get_closest_collision_point_from_target(base_position: Vector2, target_posi
     return min_pos
 
 
-func _closest_point_on_shape_local(owner_rid: RID, shape_idx: int, local_point: Vector2) -> Vector2:
+func _closest_point_on_shape_local(owner_rid: RID, shape_idx: int, local_point: Vector2, edge: bool, edge_los: bool, edge_los_point: Vector2) -> Vector2:
     var shape_rid := PhysicsServer2D.body_get_shape(owner_rid, shape_idx)
     var shape_type := PhysicsServer2D.shape_get_type(shape_rid)
     var shape_data = PhysicsServer2D.shape_get_data(shape_rid)
@@ -183,18 +306,19 @@ func _closest_point_on_shape_local(owner_rid: RID, shape_idx: int, local_point: 
                 pts[i] = pts[i] * final_transform.affine_inverse()
             # 1) If point is inside, we can just return it
             # (Simple even-odd or sign test; here even-odd on x axis)
-            var inside := false
-            var j := pts.size() - 1
-            for i in pts.size():
-                var pi := pts[i]
-                var pj := pts[j]
-                var intersects := ((pi.y > local_point.y) != (pj.y > local_point.y)) \
-                    and (local_point.x < (pj.x - pi.x) * (local_point.y - pi.y) / (pj.y - pi.y + 0.000001) + pi.x)
-                if intersects:
-                    inside = not inside
-                j = i
-            if inside:
-                return local_point
+            if not edge:
+                var inside := false
+                var j := pts.size() - 1
+                for i in pts.size():
+                    var pi := pts[i]
+                    var pj := pts[j]
+                    var intersects := ((pi.y > local_point.y) != (pj.y > local_point.y)) \
+                        and (local_point.x < (pj.x - pi.x) * (local_point.y - pi.y) / (pj.y - pi.y + 0.000001) + pi.x)
+                    if intersects:
+                        inside = not inside
+                    j = i
+                if inside:
+                    return local_point
             # 2) Otherwise, closest on polygon perimeter
             var closest := pts[0]
             var best_dist_sq := INF
@@ -204,6 +328,15 @@ func _closest_point_on_shape_local(owner_rid: RID, shape_idx: int, local_point: 
                 var candidate := Geometry2D.get_closest_point_to_segment(local_point, a, b)
                 var d_sq := candidate.distance_squared_to(local_point)
                 if d_sq < best_dist_sq:
+                    if edge_los:
+                        var dss := get_world_2d().direct_space_state
+                        var params := PhysicsRayQueryParameters2D.new()
+                        params.from = candidate + (edge_los_point - candidate).normalized() * 2.0
+                        params.to = edge_los_point
+                        params.hit_from_inside = true
+                        var res := dss.intersect_ray(params)
+                        if res:
+                            continue
                     best_dist_sq = d_sq
                     closest = candidate
             return closest
