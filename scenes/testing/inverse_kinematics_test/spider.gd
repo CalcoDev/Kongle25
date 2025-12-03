@@ -4,211 +4,195 @@ extends Node2D
 @export var inner_foot_width := 20.0
 @export var outer_foot_width := 30.0
 
-class Segment:
-    var pos := Vector2.ZERO
-    var length := 0.0
-
-    @warning_ignore("shadowed_variable")
-    func _init(pos: Vector2, length: float) -> void:
-        self.pos = pos
-        self.length = length
-
 @export var coll_radius := 60.0
 var base_pos := Vector2(320, 240)
 
 @export var short_leg_length := 30.0
 @export var long_leg_length := 30.0
 
-# var segments: Array[Segment] = []
+@export var foot_step_height := 20.0
 
-var outer_left_leg_actual := Vector2.ZERO
-var inner_left_leg_actual := Vector2.ZERO
-var inner_right_leg_actual := Vector2.ZERO
-var outer_right_leg_actual := Vector2.ZERO
+class Leg:
+    var root := Vector2.ZERO
 
-var outer_left_leg_segments: Array[Segment] = []
-var inner_left_leg_segments: Array[Segment] = []
-var inner_right_leg_segments: Array[Segment] = []
-var outer_right_leg_segments: Array[Segment] = []
+    var effector := Vector2.ZERO
+    var effector_target := Vector2.ZERO
+    var _last_effector_target := Vector2.ZERO
+    var _prev_last_effector_target := Vector2.ZERO
+
+    var joints: Array[Vector2] = []
+    var _distance_contstraints: Array[float] = []
+    # var _angle_constraints: Array[float] = []
+
+    @warning_ignore("shadowed_variable")
+    func _init(root: Vector2) -> void:
+        self.root = root
+    
+    func fabrik() -> void:
+        _fabrik_forward()
+        _fabrik_backward()
+    
+    func _fabrik_forward() -> void:
+        # var next := outer_left_leg_segments[outer_left_leg_segments.size() - 1]
+        # next.pos = outer_left_leg_actual
+        # for i in range(outer_left_leg_segments.size() - 2, 0 - 1, -1):
+        #     var curr := outer_left_leg_segments[i]
+        #     var dir := (next.pos - curr.pos).normalized() * curr.length
+        #     curr.pos = next.pos - dir
+        #     next = curr
+        joints[joints.size() - 1] = effector
+        for i in range(joints.size() - 2, 0 - 1, -1):
+            var next := joints[i + 1]
+            var curr := joints[i]
+
+            var dir := (curr - next).normalized()
+            var dist := _distance_contstraints[i]
+
+            joints[i] = next + dir * dist
+
+    
+    func _fabrik_backward() -> void:
+        # var prev := outer_left_leg_segments[0]
+        # prev.pos = base_pos
+        # for i in range(1, outer_left_leg_segments.size(), 1):
+        #     var curr := outer_left_leg_segments[i]
+        #     var dir := (curr.pos - prev.pos).normalized() * prev.length
+        #     curr.pos = prev.pos + dir
+        #     prev = curr
+        joints[0] = root
+        for i in range(1, joints.size()):
+            var prev := joints[i - 1]
+            var curr := joints[i]
+
+            var dir := (curr - prev).normalized()
+            var dist := _distance_contstraints[i - 1]
+
+            joints[i] = prev + dir * dist
+    
+    func update_target_effector(max_dist: float) -> void:
+        var dist := _last_effector_target.distance_squared_to(effector_target)
+        if dist > max_dist * max_dist: # or _effector_target_time > max_effector_time:
+            _prev_last_effector_target = _last_effector_target
+            _last_effector_target = effector_target
+        # if dist > max_dist * max_dist * 4.0:
+            # effector = _last_effector_target
+    
+    func update_effector(delta: float, step_height: float, lerp_speed: float) -> void:
+        var total_dist := absf(_prev_last_effector_target.x - _last_effector_target.x) * 1.0
+        var curr_dist := absf(_prev_last_effector_target.x - effector.x)
+        var progress := clampf(inverse_lerp(0, total_dist, curr_dist), 0.0, 1.0)
+        if is_nan(progress):
+            return
+        var height_offset = sin(PI * progress) * step_height
+
+        effector = effector.slerp(_last_effector_target + Vector2.UP * height_offset, delta * lerp_speed)
+    
+    func is_moving(tolerance: float = 0.05) -> bool:
+        var mi := minf(_prev_last_effector_target.x, _last_effector_target.x)
+        var ma := maxf(_prev_last_effector_target.x, _last_effector_target.x)
+        if mi > effector.x or ma < effector.x:
+            return true
+
+        var total_dist := absf(_prev_last_effector_target.x - _last_effector_target.x) * 1.0
+        var curr_dist := absf(_prev_last_effector_target.x - effector.x)
+        var progress := clampf(inverse_lerp(0, total_dist, curr_dist), 0.0, 1.0)
+        return not abs(progress - 1.0) < tolerance
+
+    func draw(n: Node2D) -> void:
+        _draw_outlined_circ(n, root, 2.0, Color.WHITE, 1.0, Color.BLACK)
+        # _draw_outlined_circ(n, effector_target, 1.0, Color.GREEN)
+        _draw_outlined_circ(n, _prev_last_effector_target, 1.0, Color.PURPLE)
+        _draw_outlined_circ(n, _last_effector_target, 1.0, Color.RED)
+        _draw_outlined_circ(n, effector, 1.0, Color.YELLOW)
+
+        const LINE_COLOR := Color.RED
+        const LINE_WIDTH := 2.0
+        for i in range(0, joints.size() - 1):
+            n.draw_line(-n.global_position + joints[i], -n.global_position + joints[i+1], LINE_COLOR, LINE_WIDTH)
+    
+    func _draw_outlined_circ(n: Node2D, p: Vector2, w: float, wc: Color, ow: float = 0.0, oc: Color = Color.BLACK) -> void:
+        n.draw_circle(-n.global_position + p, w + ow, oc)
+        n.draw_circle(-n.global_position + p, w, wc)
+
+var legs: Dictionary[Leg, Array] = {}
+var moving_section := -1
+var _prev_moving_section := -1
 
 func _ready() -> void:
-    
-    # var p := base_pos.lerp(get_outer_left_leg(), 0.5)
-    outer_left_leg_segments.append(Segment.new(base_pos, short_leg_length))
-    outer_left_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_outer_left_leg().x, 0.2), base_pos.y - 10.0), long_leg_length))
-    outer_left_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_outer_left_leg().x, 0.6), base_pos.y - 20.0), long_leg_length))
-    
-    inner_left_leg_segments.append(Segment.new(base_pos, short_leg_length))
-    inner_left_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_inner_left_leg().x, 0.2), base_pos.y - 10.0), long_leg_length))
-    inner_left_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_inner_left_leg().x, 0.6), base_pos.y - 20.0), long_leg_length))
-    
-    inner_right_leg_segments.append(Segment.new(base_pos, short_leg_length))
-    inner_right_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_inner_right_leg().x, 0.2), base_pos.y - 10.0), long_leg_length))
-    inner_right_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_inner_right_leg().x, 0.6), base_pos.y - 20.0), long_leg_length))
-    
-    outer_right_leg_segments.append(Segment.new(base_pos, short_leg_length))
-    outer_right_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_outer_right_leg().x, 0.2), base_pos.y - 10.0), long_leg_length))
-    outer_right_leg_segments.append(Segment.new(Vector2(lerp(base_pos.x, get_outer_right_leg().x, 0.6), base_pos.y - 20.0), long_leg_length))
+    legs = {
+        Leg.new(base_pos): [-outer_foot_width, 0],
+        # Leg.new(base_pos): [-inner_foot_width, 1],
+        # Leg.new(base_pos): [-inner_foot_width / 2, 2],
+        # Leg.new(base_pos): [-inner_foot_width / 2, 3],
+        # Leg.new(base_pos): [inner_foot_width, 0],
+        Leg.new(base_pos): [outer_foot_width, 1],
+    }
 
-    # const sgm_cnt := 20
-    # for i in sgm_cnt:
-    #     var norm := (i as float) / (sgm_cnt as float)
-    #     var length := base_pos.distance_to(target_pos) / (sgm_cnt as float)
-    #     var sgm := Segment.new(base_pos.lerp(target_pos, norm), length)
-    #     segments.append(sgm)
-    pass
+    var lk: Array[Leg] = legs.keys()
+    lk[0].joints.append_array([base_pos, base_pos + Vector2(-outer_foot_width * 0.5, -10.0), base_pos + Vector2(-outer_foot_width, foot_height)])
+    lk[0]._distance_contstraints.append_array([20, 30, -1])
+    # lk[1].joints.append_array([base_pos, base_pos + Vector2(-inner_foot_width * 0.5, -10.0), base_pos + Vector2(-inner_foot_width, foot_height)])
+    # lk[1]._distance_contstraints.append_array([10, 20, 30])
+    # lk[2].joints.append_array([base_pos, base_pos + Vector2(inner_foot_width * 0.5, -10.0), base_pos + Vector2(inner_foot_width, foot_height)])
+    # lk[2]._distance_contstraints.append_array([10, 20, 30])
+    lk[1].joints.append_array([base_pos, base_pos + Vector2(outer_foot_width * 0.5, -10.0), base_pos + Vector2(outer_foot_width, foot_height)])
+    lk[1]._distance_contstraints.append_array([20, 30, -1])
 
-
-# var collided_colliders: Array[]
-
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
     base_pos = get_global_mouse_position()
 
-    # target_pos = get_global_mouse_position()
-    # forward
-    var next := outer_left_leg_segments[outer_left_leg_segments.size() - 1]
-    next.pos = outer_left_leg_actual
-    for i in range(outer_left_leg_segments.size() - 2, 0 - 1, -1):
-        var curr := outer_left_leg_segments[i]
-        var dir := (next.pos - curr.pos).normalized() * curr.length
-        curr.pos = next.pos - dir
-        next = curr
-    # back
-    var prev := outer_left_leg_segments[0]
-    prev.pos = base_pos
-    for i in range(1, outer_left_leg_segments.size(), 1):
-        var curr := outer_left_leg_segments[i]
-        var dir := (curr.pos - prev.pos).normalized() * prev.length
-        curr.pos = prev.pos + dir
-        prev = curr
+    var reset_moving := true
+    if moving_section != -1:
+        for leg in legs:
+            if legs[leg][1] == moving_section:
+                if leg.is_moving(0.5):
+                    reset_moving = false
+                    break
+    if reset_moving:
+        _prev_moving_section = moving_section
+        moving_section = -1
 
-    # target_pos = get_global_mouse_position()
-    # forward
-    next = inner_left_leg_segments[inner_left_leg_segments.size() - 1]
-    next.pos = inner_left_leg_actual
-    for i in range(inner_left_leg_segments.size() - 2, 0 - 1, -1):
-        var curr := inner_left_leg_segments[i]
-        var dir := (next.pos - curr.pos).normalized() * curr.length
-        curr.pos = next.pos - dir
-        next = curr
-    # back
-    prev = inner_left_leg_segments[0]
-    prev.pos = base_pos
-    for i in range(1, inner_left_leg_segments.size(), 1):
-        var curr := inner_left_leg_segments[i]
-        var dir := (curr.pos - prev.pos).normalized() * prev.length
-        curr.pos = prev.pos + dir
-        prev = curr
+    # print(legs.keys()[0].joints)
+    
+    var llss: Array[Leg] = legs.keys().duplicate()
+    llss.shuffle()
+    for leg in llss:
+        leg.root = base_pos
 
-    # target_pos = get_global_mouse_position()
-    # forward
-    next = inner_right_leg_segments[inner_right_leg_segments.size() - 1]
-    next.pos = inner_right_leg_actual
-    for i in range(inner_right_leg_segments.size() - 2, 0 - 1, -1):
-        var curr := inner_right_leg_segments[i]
-        var dir := (next.pos - curr.pos).normalized() * curr.length
-        curr.pos = next.pos - dir
-        next = curr
-    # back
-    prev = inner_right_leg_segments[0]
-    prev.pos = base_pos
-    for i in range(1, inner_right_leg_segments.size(), 1):
-        var curr := inner_right_leg_segments[i]
-        var dir := (curr.pos - prev.pos).normalized() * prev.length
-        curr.pos = prev.pos + dir
-        prev = curr
+        var section: int = legs[leg][1]
+        if moving_section == -1 and section != _prev_moving_section:
+            moving_section = section
 
-    # target_pos = get_global_mouse_position()
-    # forward
-    next = outer_right_leg_segments[outer_right_leg_segments.size() - 1]
-    next.pos = outer_right_leg_actual
-    for i in range(outer_right_leg_segments.size() - 2, 0 - 1, -1):
-        var curr := outer_right_leg_segments[i]
-        var dir := (next.pos - curr.pos).normalized() * curr.length
-        curr.pos = next.pos - dir
-        next = curr
-    # back
-    prev = outer_right_leg_segments[0]
-    prev.pos = base_pos
-    for i in range(1, outer_right_leg_segments.size(), 1):
-        var curr := outer_right_leg_segments[i]
-        var dir := (curr.pos - prev.pos).normalized() * prev.length
-        curr.pos = prev.pos + dir
-        prev = curr
+        if moving_section == section:
+            leg.update_target_effector(20.0)
+        
+        leg.update_effector(delta, foot_step_height, 8.0)
+        leg.fabrik()
+        # leg
 
     queue_redraw()
 
-func _physics_process(delta: float) -> void:
-    var v := Vector2.ZERO
-
-    delta *= 2.0
-    const le_dist := 30.0
-    
-    v = get_closest_collision_point_from_target(base_pos, base_pos + get_outer_left_leg(), coll_radius)
-    if v != Vector2.INF:
-        outer_left_leg_actual = outer_left_leg_actual.lerp(v, delta)
-        if outer_left_leg_actual.distance_to(v) >= le_dist and randi() % 4 == 0:
-            outer_left_leg_actual = v
-    v = get_closest_collision_point_from_target(base_pos, base_pos + get_inner_left_leg(), coll_radius)
-    if v != Vector2.INF:
-        inner_left_leg_actual = inner_left_leg_actual.lerp(v, delta)
-        if inner_left_leg_actual.distance_to(v) >= le_dist and randi() % 4 == 1:
-            inner_left_leg_actual = v
-    v = get_closest_collision_point_from_target(base_pos, base_pos + get_inner_right_leg(), coll_radius)
-    if v != Vector2.INF:
-        inner_right_leg_actual = inner_right_leg_actual.lerp(v, delta)
-        if inner_right_leg_actual.distance_to(v) >= le_dist and randi() % 4 == 2:
-            inner_right_leg_actual = v
-    v = get_closest_collision_point_from_target(base_pos, base_pos + get_outer_right_leg(), coll_radius)
-    if v != Vector2.INF:
-        outer_right_leg_actual = outer_right_leg_actual.lerp(v, delta)
-        if outer_right_leg_actual.distance_to(v) >= le_dist and randi() % 4 == 3:
-            outer_right_leg_actual = v
+func _physics_process(_delta: float) -> void:
+    for leg in legs:
+        var target = get_closest_collision_point_from_target(base_pos, base_pos + Vector2(legs[leg][0], foot_height), coll_radius)
+        if target != Vector2.INF:
+            leg.effector_target = target
 
 func _draw() -> void:
     draw_circle(base_pos, coll_radius, Color8(0, 255, 255, 30))
 
-    const r := 7.0
-    const o := 2.0
-    draw_circle(base_pos, r + o, Color.WHITE)
-    draw_circle(base_pos, r, Color.RED)
+    draw_circle(base_pos, 2.0 + 1.0, Color.BLACK)
+    draw_circle(base_pos, 2.0, Color.WHITE)
 
-    const r1 := 3.0
-    draw_circle(base_pos + get_outer_left_leg(), r1 + o, Color.WHITE)
-    draw_circle(base_pos + get_outer_left_leg(), r1, Color.CYAN)
-    # for l in get_leg_array():
-    #     draw_circle(base_pos + l, r1 + o, Color.WHITE)
-    #     draw_circle(base_pos + l, r1, Color.CYAN)
-    
-    draw_circle(-global_position + outer_left_leg_actual, 5.0, Color.ORANGE)
-    # draw_circle(-global_position + inner_left_leg_actual, 5.0, Color.ORANGE)
-    # draw_circle(-global_position + inner_right_leg_actual, 5.0, Color.ORANGE)
-    # draw_circle(-global_position + outer_right_leg_actual, 5.0, Color.ORANGE)
+    for leg in legs:
+        leg.draw(self)
 
-    for i in outer_left_leg_segments.size() - 1:
-        draw_line(outer_left_leg_segments[i].pos, outer_left_leg_segments[i+1].pos, Color.GREEN, 3.0)
-    const r2 := 3.0
-    for segm in outer_left_leg_segments:
-        draw_circle(segm.pos, r2 + o, Color.WHITE)
-        draw_circle(segm.pos, r2, Color.REBECCA_PURPLE)
-
-    for i in inner_left_leg_segments.size() - 1:
-        draw_line(inner_left_leg_segments[i].pos, inner_left_leg_segments[i+1].pos, Color.GREEN, 3.0)
-    for segm in inner_left_leg_segments:
-        draw_circle(segm.pos, r2 + o, Color.WHITE)
-        draw_circle(segm.pos, r2, Color.REBECCA_PURPLE)
-
-    for i in inner_right_leg_segments.size() - 1:
-        draw_line(inner_right_leg_segments[i].pos, inner_right_leg_segments[i+1].pos, Color.GREEN, 3.0)
-    for segm in inner_right_leg_segments:
-        draw_circle(segm.pos, r2 + o, Color.WHITE)
-        draw_circle(segm.pos, r2, Color.REBECCA_PURPLE)
-
-    for i in outer_right_leg_segments.size() - 1:
-        draw_line(outer_right_leg_segments[i].pos, outer_right_leg_segments[i+1].pos, Color.GREEN, 3.0)
-    for segm in outer_right_leg_segments:
-        draw_circle(segm.pos, r2 + o, Color.WHITE)
-        draw_circle(segm.pos, r2, Color.REBECCA_PURPLE)
+    # const r2 := 3.0
+    # for i in outer_left_leg_segments.size() - 1:
+    #     draw_line(outer_left_leg_segments[i].pos, outer_left_leg_segments[i+1].pos, Color.GREEN, 3.0)
+    # for segm in outer_left_leg_segments:
+    #     draw_circle(segm.pos, r2 + o, Color.WHITE)
+    #     draw_circle(segm.pos, r2, Color.REBECCA_PURPLE)
 
 
 func get_leg_array() -> Array[Vector2]:

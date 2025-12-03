@@ -7,11 +7,12 @@
 
 [node name="Spider" type="Node2D" parent="." unique_id=1519138696]
 z_index = 3
+position = Vector2(255, 211)
 script = ExtResource("1_ifhvp")
-foot_height = 40.0
+foot_height = 20.0
 inner_foot_width = 8.0
 outer_foot_width = 20.0
-coll_radius = 80.0
+coll_radius = 40.0
 short_leg_length = 20.0
 long_leg_length = 20.0
 
@@ -33,4 +34,5 @@ position = Vector2(-698, -336)
 polygon = PackedVector2Array(117, 177, 156, 104, 171, 161, 210, 96, 275, 128, 207, 136, 277, 156, 202, 158, 200, 218, 141, 202, 152, 178, 89, 224, 59, 186, 103, 192)
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=264093293]
-position = Vector2(337, 238)
+position = Vector2(213, 157)
+zoom = Vector2(2, 2)
